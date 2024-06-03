@@ -121,14 +121,16 @@ if __name__ == '__main__':
         start_time = time.time()
 
         with torch.no_grad():
-            for idx, (x, y, didx, rot, zoom) in enumerate(test_data):
+            for idx, (x, y, didx, rotTensor, zoomTensor) in enumerate(test_data):
                 xc = x.to(device)
                 yc = [yi.to(device) for yi in y]
                 lossd = net.compute_loss(xc, yc)
 
                 q_img, ang_img, width_img = post_process_output(lossd['pred']['pos'], lossd['pred']['cos'],
                                                                 lossd['pred']['sin'], lossd['pred']['width'])
-
+                
+                rot = rotTensor.item()
+                zoom = zoomTensor.item()
                 if args.iou_eval:
                     s = evaluation.calculate_iou_match(q_img, ang_img, test_data.dataset.get_gtbb(didx, rot, zoom),
                                                        no_grasps=args.n_grasps,

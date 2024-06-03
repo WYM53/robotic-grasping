@@ -55,9 +55,14 @@ if __name__ == '__main__':
     # Get the compute device
     device = get_device(args.force_cpu)
 
-    img_data = CameraData(include_depth=args.use_depth, include_rgb=args.use_rgb)
+    img_data = CameraData(width=1024, height=1024, output_size=224, include_depth=args.use_depth, include_rgb=args.use_rgb)
 
     x, depth_img, rgb_img = img_data.get_data(rgb=rgb, depth=depth)
+    
+    if(x.ndim == 3):
+        x = x.unsqueeze(0)
+
+    print("input shape: ", x.shape, " ndim: ", x.ndim)
 
     with torch.no_grad():
         xc = x.to(device)

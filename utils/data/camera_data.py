@@ -13,7 +13,8 @@ class CameraData:
                  height=480,
                  output_size=224,
                  include_depth=True,
-                 include_rgb=True
+                 include_rgb=True,
+                 crop=False
                  ):
         """
         :param output_size: Image output size in pixels (square)
@@ -23,6 +24,7 @@ class CameraData:
         self.output_size = output_size
         self.include_depth = include_depth
         self.include_rgb = include_rgb
+        self.crop = crop
 
         if include_depth is False and include_rgb is False:
             raise ValueError('At least one of Depth or RGB must be specified.')
@@ -44,16 +46,20 @@ class CameraData:
 
     def get_depth(self, img):
         depth_img = image.Image(img)
-        depth_img.crop(bottom_right=self.bottom_right, top_left=self.top_left)
+        if self.crop:
+            depth_img.crop(bottom_right=self.bottom_right, top_left=self.top_left)
+        else:
+            depth_img.resize((self.output_size, self.output_size))
         depth_img.normalise()
-        # depth_img.resize((self.output_size, self.output_size))
         depth_img.img = depth_img.img.transpose((2, 0, 1))
         return depth_img.img
 
     def get_rgb(self, img, norm=True):
         rgb_img = image.Image(img)
-        rgb_img.crop(bottom_right=self.bottom_right, top_left=self.top_left)
-        # rgb_img.resize((self.output_size, self.output_size))
+        if self.crop:
+            rgb_img.crop(bottom_right=self.bottom_right, top_left=self.top_left)
+        else:            
+            rgb_img.resize((self.output_size, self.output_size))
         if norm:
                 rgb_img.normalise()
                 rgb_img.img = rgb_img.img.transpose((2, 0, 1))

@@ -18,7 +18,7 @@ class CornellDataset(GraspDatasetBase):
         """
         super(CornellDataset, self).__init__(**kwargs)
 
-        self.grasp_files = glob.glob(os.path.join(file_path, '*', 'pcd*cpos.txt'))
+        self.grasp_files = glob.glob(os.path.join(file_path, '**', 'pcd*cpos.txt'), recursive=True)
         self.grasp_files.sort()
         self.length = len(self.grasp_files)
 

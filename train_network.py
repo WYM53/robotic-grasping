@@ -105,7 +105,7 @@ def validate(net, device, val_data, iou_threshold):
     ld = len(val_data)
 
     with torch.no_grad():
-        for x, y, didx, rot, zoom_factor in val_data:
+        for x, y, didx, rotTensor, zoomTensor, in val_data:
             xc = x.to(device)
             yc = [yy.to(device) for yy in y]
             lossd = net.compute_loss(xc, yc)
@@ -121,6 +121,8 @@ def validate(net, device, val_data, iou_threshold):
             q_out, ang_out, w_out = post_process_output(lossd['pred']['pos'], lossd['pred']['cos'],
                                                         lossd['pred']['sin'], lossd['pred']['width'])
 
+            rot = rotTensor.item()
+            zoom_factor = zoomTensor.item()
             s = evaluation.calculate_iou_match(q_out,
                                                ang_out,
                                                val_data.dataset.get_gtbb(didx, rot, zoom_factor),
@@ -311,6 +313,8 @@ def run():
     summary(net, (input_channels, args.input_size, args.input_size))
     sys.stdout = sys.__stdout__
     f.close()
+
+    logging.info('epochs {}, batches_per_epoch {}'.format(args.epochs, args.batches_per_epoch))   
 
     best_iou = 0.0
     for epoch in range(args.epochs):
