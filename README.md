@@ -1,9 +1,11 @@
 # conda ENV
+```bash
 conda create -n robot python=3.9 
 conda activate robot 
 conda install pytorch==1.12.0 torchvision==0.13 cudatoolkit=11.3 -c pytorch -y
 cd robotic-grasping
 pip install -r requirements.txt
+```
 
 # Antipodal Robotic Grasping
 We present a novel generative residual convolutional neural network based model architecture which detects objects in the camera’s field of view and predicts a suitable antipodal grasp configuration for the objects in the image.
