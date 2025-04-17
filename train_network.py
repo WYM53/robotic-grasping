@@ -52,7 +52,7 @@ def parse_args():
     parser.add_argument('--ds-shuffle', action='store_true', default=False,
                         help='Shuffle the dataset')
     parser.add_argument('--ds-rotate', type=float, default=0.0,
-                        help='Shift the start point of the dataset to use a different test/train split')
+                        help='Shift the start point of the dataset to use a different test/train split')#10%
     parser.add_argument('--num-workers', type=int, default=8,
                         help='Dataset workers')
 
@@ -295,6 +295,7 @@ def run():
         prob=args.dropout_prob,
         channel_size=args.channel_size
     )
+    #net = torch.load('trained-models/jacquard-rgbd-grconvnet3-drop0-ch32/epoch_48_iou_0.93')
 
     net = net.to(device)
     logging.info('Done')
