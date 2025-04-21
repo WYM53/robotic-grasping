@@ -12,7 +12,7 @@ class RealSenseCamera:
                  device_id,
                  width=640,
                  height=480,
-                 fps=6):
+                 fps=5):#fps=60/30/15/5 Hz
         self.device_id = device_id
         self.width = width
         self.height = height
@@ -29,6 +29,7 @@ class RealSenseCamera:
         config.enable_device(str(self.device_id))
         config.enable_stream(rs.stream.depth, self.width, self.height, rs.format.z16, self.fps)
         config.enable_stream(rs.stream.color, self.width, self.height, rs.format.rgb8, self.fps)
+
         cfg = self.pipeline.start(config)
 
         # Determine intrinsics
@@ -74,7 +75,9 @@ class RealSenseCamera:
 
 
 if __name__ == '__main__':
-    cam = RealSenseCamera(device_id=830112070066)
+    # cam = RealSenseCamera(device_id=830112070066)
+    cam = RealSenseCamera(device_id=246322301022)
+    # cam = RealSenseCamera(device_id=320143060403)
     cam.connect()
     while True:
         cam.plot_image_bundle()

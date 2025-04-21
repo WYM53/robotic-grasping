@@ -20,57 +20,85 @@ from utils.data import get_dataset
 from utils.dataset_processing import evaluation
 from utils.visualisation.gridshow import gridshow
 
+"""
+模型训练：
+    代码结构：
+        设置args变量(数据集地址)
+        输出log、tensorboardX等,便于观察训练过程
+        数据集导入、数据集分割
+        网络模型导入
+        设置优化器、训练参数等
+        开始训练，训练过程中进行测试，查看训练效果
+        保存网络模型
+
+"""
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train network')
 
     # Network
+    """设置网络框架"""
     parser.add_argument('--network', type=str, default='grconvnet3',
                         help='Network name in inference/models')
+    """设置输入图像大小"""
     parser.add_argument('--input-size', type=int, default=224,
                         help='Input image size for the network')
+    """设置是否使用深度信息"""
     parser.add_argument('--use-depth', type=int, default=1,
                         help='Use Depth image for training (1/0)')
+    """设置是否使用rgb信息"""
     parser.add_argument('--use-rgb', type=int, default=1,
                         help='Use RGB image for training (1/0)')
+    """设置是否使用dropout"""
     parser.add_argument('--use-dropout', type=int, default=1,
                         help='Use dropout for training (1/0)')
     parser.add_argument('--dropout-prob', type=float, default=0.1,
                         help='Dropout prob for training (0-1)')
+    
     parser.add_argument('--channel-size', type=int, default=32,
                         help='Internal channel size for the network')
     parser.add_argument('--iou-threshold', type=float, default=0.25,
                         help='Threshold for IOU matching')
 
     # Datasets
-    parser.add_argument('--dataset', type=str,
+    parser.add_argument('--dataset', type=str, default='jaquard',
                         help='Dataset Name ("cornell" or "jaquard")')
     parser.add_argument('--dataset-path', type=str,
                         help='Path to dataset')
+    """数据集分割比例"""
     parser.add_argument('--split', type=float, default=0.9,
                         help='Fraction of data for training (remainder is validation)')
+    """是否打乱数据集"""
     parser.add_argument('--ds-shuffle', action='store_true', default=False,
                         help='Shuffle the dataset')
+    """测试时从哪个位置开始选取10%的测试集"""
     parser.add_argument('--ds-rotate', type=float, default=0.0,
                         help='Shift the start point of the dataset to use a different test/train split')#10%
     parser.add_argument('--num-workers', type=int, default=8,
                         help='Dataset workers')
 
     # Training
+    """设置训练时每次传入的图片数量batche_size"""
     parser.add_argument('--batch-size', type=int, default=8,
                         help='Batch size')
+    """设置训练的迭代次数"""
     parser.add_argument('--epochs', type=int, default=50,
                         help='Training epochs')
+    """设置每轮迭代训练时运行的batche_size数量"""
     parser.add_argument('--batches-per-epoch', type=int, default=1000,
                         help='Batches per Epoch')
+    """设置优化器"""
     parser.add_argument('--optim', type=str, default='adam',
                         help='Optmizer for the training. (adam or SGD)')
 
     # Logging etc.
+    """生成每次训练的目录名称"""
     parser.add_argument('--description', type=str, default='',
                         help='Training description')
+    """生成文件的位置"""
     parser.add_argument('--logdir', type=str, default='logs/',
                         help='Log directory')
+    """在训练过程中是否查看可视化"""
     parser.add_argument('--vis', action='store_true',
                         help='Visualise the training process')
     parser.add_argument('--cpu', dest='force_cpu', action='store_true', default=False,
@@ -208,9 +236,10 @@ def train(epoch, net, device, train_data, optimizer, batches_per_epoch, vis=Fals
 
 
 def run():
+    # 设置args变量(数据集地址)
     args = parse_args()
 
-    # Set-up output directories
+    # Set-up output directories 获取当前时刻
     dt = datetime.datetime.now().strftime('%y%m%d_%H%M')
     net_desc = '{}_{}'.format(dt, '_'.join(args.description.split()))
 
@@ -243,7 +272,9 @@ def run():
     logging.getLogger('').addHandler(console)
 
     # Get the compute device
-    device = get_device(args.force_cpu)
+    # device = get_device(args.force_cpu) # 用的cpu
+    device = torch.device('cuda:0')
+
 
     # Load Dataset
     logging.info('Loading {} Dataset...'.format(args.dataset.title()))

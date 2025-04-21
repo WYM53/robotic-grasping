@@ -99,6 +99,10 @@ Example for Jacquard dataset:
 ```bash
 python train_network.py --dataset jacquard --dataset-path <Path To Dataset> --description training_jacquard --use-dropout 0 --input-size 300
 ```
+eg:
+```bash
+python train_network.py --dataset jacquard --dataset-path '/media/galaxy/博士阶段资料/GRCNN复现/Jacquard' --description train_jacquard --use-dropout 0 --input-size 300
+```
 
 ## Model Evaluation
 
@@ -114,6 +118,10 @@ Example for Jacquard dataset:
 
 ```bash
 python evaluate.py --network <Path to Trained Network> --dataset jacquard --dataset-path <Path to Dataset> --iou-eval --use-dropout 0 --input-size 300
+```
+eg:
+```bash
+python evaluate.py --network 'trained-models/jacquard-rgbd-grconvnet3-drop0-ch32/epoch_48_iou_0.93' --dataset jacquard --dataset-path '/media/galaxy/博士阶段资料/GRCNN复现/Jacquard' --iou-eval --input-size 30
 ```
 
 ## Run Tasks
