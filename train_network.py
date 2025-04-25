@@ -243,7 +243,7 @@ def run():
     dt = datetime.datetime.now().strftime('%y%m%d_%H%M')
     net_desc = '{}_{}'.format(dt, '_'.join(args.description.split()))
 
-    save_folder = os.path.join(args.logdir, net_desc)
+    save_folder = os.path.join(args.logdir, net_desc) #生成一个文件夹
     if not os.path.exists(save_folder):
         os.makedirs(save_folder)
     tb = tensorboardX.SummaryWriter(save_folder)
@@ -276,7 +276,7 @@ def run():
     device = torch.device('cuda:0')
 
 
-    # Load Dataset
+    # Load Dataset 数据集导入和分割
     logging.info('Loading {} Dataset...'.format(args.dataset.title()))
     Dataset = get_dataset(args.dataset)
     dataset = Dataset(args.dataset_path,
@@ -289,9 +289,9 @@ def run():
     logging.info('Dataset size is {}'.format(dataset.length))
 
     # Creating data indices for training and validation splits
-    indices = list(range(dataset.length))
+    indices = list(range(dataset.length)) # 数据集编号
     split = int(np.floor(args.split * dataset.length))
-    if args.ds_shuffle:
+    if args.ds_shuffle: # 是否打乱
         np.random.seed(args.random_seed)
         np.random.shuffle(indices)
     train_indices, val_indices = indices[:split], indices[split:]
@@ -302,12 +302,14 @@ def run():
     train_sampler = torch.utils.data.sampler.SubsetRandomSampler(train_indices)
     val_sampler = torch.utils.data.sampler.SubsetRandomSampler(val_indices)
 
+    # 训练集
     train_data = torch.utils.data.DataLoader(
         dataset,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         sampler=train_sampler
     )
+    # 测试集
     val_data = torch.utils.data.DataLoader(
         dataset,
         batch_size=1,
@@ -316,7 +318,7 @@ def run():
     )
     logging.info('Done')
 
-    # Load the network
+    # Load the network 网络模型的导入
     logging.info('Loading Network...')
     input_channels = 1 * args.use_depth + 3 * args.use_rgb
     network = get_network(args.network)
@@ -326,7 +328,7 @@ def run():
         prob=args.dropout_prob,
         channel_size=args.channel_size
     )
-    #net = torch.load('trained-models/jacquard-rgbd-grconvnet3-drop0-ch32/epoch_48_iou_0.93')
+    #net = torch.load('trained-models/jacquard-rgbd-grconvnet3-drop0-ch32/epoch_48_iou_0.93') # 用了作者的预训练模型作为基础，进行训练 （和上面的二选一）
 
     net = net.to(device)
     logging.info('Done')
@@ -348,6 +350,7 @@ def run():
 
     logging.info('epochs {}, batches_per_epoch {}'.format(args.epochs, args.batches_per_epoch))   
 
+    # 训练环节
     best_iou = 0.0
     for epoch in range(args.epochs):
         logging.info('Beginning Epoch {:02d}'.format(epoch))

@@ -77,7 +77,6 @@ class RealSenseCamera:
 if __name__ == '__main__':
     # cam = RealSenseCamera(device_id=830112070066)
     cam = RealSenseCamera(device_id=246322301022)
-    # cam = RealSenseCamera(device_id=320143060403)
     cam.connect()
     while True:
         cam.plot_image_bundle()

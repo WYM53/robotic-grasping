@@ -8,6 +8,9 @@ from UR_Robot import UR_Robot
 from scipy import optimize  
 from mpl_toolkits.mplot3d import Axes3D  
 
+"""
+    眼在手外标定
+"""
 
 # User options (change me)
 # --------------- Setup options ---------------
@@ -15,7 +18,7 @@ from mpl_toolkits.mplot3d import Axes3D
 # tcp_host_ip = '192.168.50.100' # IP and port to robot arm as TCP client (UR5)
 tcp_host_ip = '192.168.1.12'
 
-tcp_port = 30003
+tcp_port = 50002
 # workspace_limits = np.asarray([[0.3, 0.75], [0.05, 0.4], [-0.2, -0.1]]) # Cols: min max, Rows: x y z (define workspace limits in robot coordinates)
 # workspace_limits = np.asarray([[0.35, 0.55], [0, 0.35], [0.15, 0.25]])
 workspace_limits = np.asarray([[0.2, 0.4], [0.4, 0.6], [0.05, 0.1]])
