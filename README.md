@@ -1,3 +1,4 @@
+参考了:https://github.com/zhenjing/robotic-grasping
 # conda ENV
 ```bash
 conda create -n robot python=3.9 
