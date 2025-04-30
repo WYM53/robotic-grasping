@@ -8,37 +8,32 @@ from UR_Robot import UR_Robot
 from scipy import optimize  
 from mpl_toolkits.mplot3d import Axes3D  
 
-"""
-    眼在手外标定
-"""
-
-# User options (change me)
+"""眼在手外标定"""
 # --------------- Setup options ---------------
 """修改了的"""
-# tcp_host_ip = '192.168.50.100' # IP and port to robot arm as TCP client (UR5)
+# IP and port to robot arm as TCP client (UR5)
 tcp_host_ip = '192.168.1.12'
-
 tcp_port = 50002
+
 # workspace_limits = np.asarray([[0.3, 0.75], [0.05, 0.4], [-0.2, -0.1]]) # Cols: min max, Rows: x y z (define workspace limits in robot coordinates)
-# workspace_limits = np.asarray([[0.35, 0.55], [0, 0.35], [0.15, 0.25]])
-workspace_limits = np.asarray([[0.2, 0.4], [0.4, 0.6], [0.05, 0.1]])
+workspace_limits = np.asarray([[0.2, 0.4], [0.4, 0.6], [0.05, 0.1]])# change me!
 
 calib_grid_step = 0.05 #0.05
-#checkerboard_offset_from_tool = [0,-0.13,0.02]  # change me!
-checkerboard_offset_from_tool = [0,0.121,0]
-tool_orientation = [-np.pi/2,0,0] # [0,-2.22,2.22] # [2.22,2.22,0]
-# tool_orientation = [np.pi/2,np.pi/2,np.pi/2]
+checkerboard_offset_from_tool = [0,0.121,0] # 棋盘中心相对于末端工具坐标系的3D偏移，单位米。change me!
+tool_orientation = [-np.pi/2,0,0] # 使棋盘面垂直于相机光轴。change me!
 #---------------------------------------------
 
-
 # Construct 3D calibration grid across workspace
-print(1 + (workspace_limits[0][1] - workspace_limits[0][0])/calib_grid_step)
+print(1 + (workspace_limits[0][1] - workspace_limits[0][0])/calib_grid_step) # 先打印 x 方向采样点个数以便调试
+# 依据上下限与步长生成 等间距采样
 gridspace_x = np.linspace(workspace_limits[0][0], workspace_limits[0][1], int(1 + (workspace_limits[0][1] - workspace_limits[0][0])/calib_grid_step))
 gridspace_y = np.linspace(workspace_limits[1][0], workspace_limits[1][1], int(1 + (workspace_limits[1][1] - workspace_limits[1][0])/calib_grid_step))
 gridspace_z = np.linspace(workspace_limits[2][0], workspace_limits[2][1], int(1 + (workspace_limits[2][1] - workspace_limits[2][0])/calib_grid_step))
+# 生成三维坐标网格
 calib_grid_x, calib_grid_y, calib_grid_z = np.meshgrid(gridspace_x, gridspace_y, gridspace_z)
+# 计算总采样点数
 num_calib_grid_pts = calib_grid_x.shape[0]*calib_grid_x.shape[1]*calib_grid_x.shape[2]
-
+#  x、y、z 三个体素坐标拉直成列向量，再用 np.concatenate 得到 calib_grid_pts（N×3）
 calib_grid_x.shape = (num_calib_grid_pts,1)
 calib_grid_y.shape = (num_calib_grid_pts,1)
 calib_grid_z.shape = (num_calib_grid_pts,1)
@@ -64,7 +59,16 @@ robot.move_j([-np.pi, -np.pi/2, np.pi/2, 0, np.pi/2, np.pi])
 #                           -(0 / 360.0) * 2 * np.pi, 0.0]
 # [0,-np.pi/2,0,-np.pi/2,0,0]
 # Move robot to each calibration point in workspace
+
+
 print('Collecting data...')
+
+
+"""
+    循环遍历所有网格节点：
+        tool_position 当前 xyz。
+        tool_config 拼接位姿（位置 + 姿态）
+"""
 for calib_pt_idx in range(num_calib_grid_pts):
     tool_position = calib_grid_pts[calib_pt_idx,:]
     tool_config = [tool_position[0],tool_position[1],tool_position[2],
@@ -74,20 +78,20 @@ for calib_pt_idx in range(num_calib_grid_pts):
     print(f"tool position and orientation:{tool_config1}")
     robot.move_j_p(tool_config)
     time.sleep(2)  # k
-    
+
     # Find checkerboard center
-    checkerboard_size = (5,5)
+    checkerboard_size = (5,5) # 5×5 角点内部棋盘（即 6×6 小方块）
     refine_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-    camera_color_img, camera_depth_img = robot.get_camera_data()
+    camera_color_img, camera_depth_img = robot.get_camera_data() # 返回 彩色图 和 对齐深度图
     bgr_color_data = cv2.cvtColor(camera_color_img, cv2.COLOR_RGB2BGR)
     gray_data = cv2.cvtColor(bgr_color_data, cv2.COLOR_RGB2GRAY)
-    checkerboard_found, corners = cv2.findChessboardCorners(gray_data, checkerboard_size, None, cv2.CALIB_CB_ADAPTIVE_THRESH)
+    checkerboard_found, corners = cv2.findChessboardCorners(gray_data, checkerboard_size, None, cv2.CALIB_CB_ADAPTIVE_THRESH) # 使用自适应阈值尝试找角点；若未成功，则跳过此网格点
     print(checkerboard_found)
-    if checkerboard_found:
-        corners_refined = cv2.cornerSubPix(gray_data, corners, (5,5), (-1,-1), refine_criteria)
 
+    if checkerboard_found:
+        corners_refined = cv2.cornerSubPix(gray_data, corners, (5,5), (-1,-1), refine_criteria) # 子像素精细化角点
         # Get observed checkerboard center 3D point in camera space
-        checkerboard_pix = np.round(corners_refined[12,0,:]).astype(int)
+        checkerboard_pix = np.round(corners_refined[12,0,:]).astype(int) # 取索引 12 的角点（棋盘中心）计算像素坐标
         checkerboard_z = camera_depth_img[checkerboard_pix[1]][checkerboard_pix[0]]
         checkerboard_x = np.multiply(checkerboard_pix[0]-robot.cam_intrinsics[0][2],checkerboard_z/robot.cam_intrinsics[0][0])
         checkerboard_y = np.multiply(checkerboard_pix[1]-robot.cam_intrinsics[1][2],checkerboard_z/robot.cam_intrinsics[1][1])
@@ -97,7 +101,7 @@ for calib_pt_idx in range(num_calib_grid_pts):
         # Save calibration point and observed checkerboard center
         observed_pts.append([checkerboard_x,checkerboard_y,checkerboard_z])
         # tool_position[2] += checkerboard_offset_from_tool
-        tool_position = tool_position + checkerboard_offset_from_tool
+        tool_position = tool_position + checkerboard_offset_from_tool #计算真实棋盘中心在机器人基坐标系的位置
 
         measured_pts.append(tool_position)
         observed_pix.append(checkerboard_pix)

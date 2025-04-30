@@ -317,3 +317,4 @@ if __name__ =="__main__":
     ur_robot_left.go_home()
     home_right = ur_robot_right.get_TCP_pose_right(3.130, 0.071, -2.167, 0.175, 0.163, 1.2)
     ur_robot_right.rtde_c.moveL(home_right, 0.5, 0.25)
+    
