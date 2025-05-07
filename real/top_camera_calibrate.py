@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import matplotlib.pyplot as plt
 import numpy as np
 import time
@@ -12,19 +13,17 @@ from scipy import optimize
 from mpl_toolkits.mplot3d import Axes3D  
 
 """
-    眼在手外标定
+    眼在手外标定,标定结果：    top相机 相对于 world坐标系
 """
 
-# User options (change me)
 # --------------- Setup options ---------------
 tcp_host_ip = '192.168.1.12'
 tcp_port = 50002
 
-# workspace_limits = np.asarray([[0.17, 0.22], [-0.35, -0.15], [1.2, 1.4]]) # 50 没有设置安装Robotiq_85
-workspace_limits = np.asarray([[0.17, 0.22], [-0.3, -0.1], [1.2, 1.4]]) # 50 相对于world 设置安装Robotiq_85
 calib_grid_step = 0.05 # 生成标定点的间隔距离
-checkerboard_offset_from_tool = [0, 0, 0.155] # 标定板到末端的距离 (相对于tool)
-tool_orientation = [-1.305, 0.050, 0.022] # 工具方向，需要让摄像头能看到 (相对于base坐标系)
+workspace_limits = np.asarray([[0.17, 0.22], [-0.25, -0.05], [1.2, 1.4]]) # 50个点 world坐标系
+checkerboard_offset_from_tool = [0, 0.155, 0] # 末端到标定板的距离 (相对于tool)
+tool_orientation = [-np.pi/2, 0, 0] # 工具方向，需要让摄像头能看到 (相对于world坐标系)
 #---------------------------------------------
 
 # Construct 3D calibration grid across workspace
@@ -53,13 +52,13 @@ for calib_pt_idx in range(num_calib_grid_pts):
     tool_position = calib_grid_pts[calib_pt_idx,:]
     tool_config = [tool_position[0],tool_position[1],tool_position[2],
            tool_orientation[0],tool_orientation[1],tool_orientation[2]]
-    print(f"tool position and orientation:{tool_config}")
+    print(f"tool position and orientation:{tool_config}") #相对于世界坐标系的位姿
     base_config = robot.get_TCP_pose_right(tool_config[3], tool_config[4], tool_config[5], tool_config[0], tool_config[1], tool_config[2])
     robot.rtde_c.moveL(base_config, 0.5, 0.25)
-    time.sleep(2)  # k
+    time.sleep(2) 
     
     # Find checkerboard center
-    checkerboard_size = (5,5) #标定板大小，要改
+    checkerboard_size = (5,5) #标定板格子之间的中心点个数
     refine_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
     camera_color_img, camera_depth_img = robot.get_camera_data()
     bgr_color_data = cv2.cvtColor(camera_color_img, cv2.COLOR_RGB2BGR)
@@ -79,11 +78,8 @@ for calib_pt_idx in range(num_calib_grid_pts):
 
         # Save calibration point and observed checkerboard center
         observed_pts.append([checkerboard_x, checkerboard_y, checkerboard_z])
-        # tool_position = [base_config[0], base_config[1], base_config[2]]
-        # tool_position = tool_position + checkerboard_offset_from_tool
-        tool_position = np.array([base_config[0], base_config[1], base_config[2]]) + np.array(checkerboard_offset_from_tool)
+        tool_position = np.array([tool_config[0], tool_config[1], tool_config[2]]) + np.array(checkerboard_offset_from_tool) # 得到标定板中心点位置
         measured_pts.append(tool_position.tolist())
-
 
         # measured_pts.append(tool_position) 
         observed_pix.append(checkerboard_pix)
@@ -147,8 +143,8 @@ camera_depth_offset = optim_result.x
 
 # Save camera optimized offset and camera pose
 print('Saving...')
-np.savetxt('camera_depth_scale1.txt', camera_depth_offset, delimiter=' ')
+np.savetxt('camera_depth_scale.txt', camera_depth_offset, delimiter=' ')
 get_rigid_transform_error(camera_depth_offset)
 camera_pose = np.linalg.inv(world2camera)
-np.savetxt('camera_pose1.txt', camera_pose, delimiter=' ')
+np.savetxt('camera_pose.txt', camera_pose, delimiter=' ')
 print('Done.')

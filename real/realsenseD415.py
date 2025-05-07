@@ -50,7 +50,7 @@ class Camera(object):
 
         # Convert images to numpy arrays
         depth_image = np.asanyarray(aligned_depth_frame.get_data(),dtype=np.float32)
-        # depth_image *= self.scale
+
         #################################################################
         # depth_image = np.expand_dims(depth_image, axis=2) # 标定时注释掉
         #################################################################

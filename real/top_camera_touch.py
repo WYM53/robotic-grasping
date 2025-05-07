@@ -11,7 +11,9 @@ project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 from Ur5e_Robot import Ur5e_Robot
 
-# User options (change me)
+"""
+    像素点抓取，测试相机标定效果
+"""
 # --------------- Setup options ---------------
 tcp_host_ip = '192.168.1.12' 
 tcp_port = 50002
@@ -52,6 +54,7 @@ def mouseclick_callback(event, x, y, flags, param):
 
         target_position = target_position[0:3,0]
         print(target_position)
+        # 发送的位置相对于 world坐标系
         robot.plane_grasp([target_position[0],target_position[1],target_position[2]])
 
 # Show color and depth frames

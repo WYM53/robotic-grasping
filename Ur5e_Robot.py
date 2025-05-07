@@ -18,7 +18,7 @@ import sys
 
 
 class Ur5e_Robot:
-    def __init__(self, tcp_host_ip="192.168.1.12", tcp_port=50002, is_use_robotiq85=True, is_use_camera=True):
+    def __init__(self, tcp_host_ip="192.168.1.12", tcp_port=50002, is_use_robotiq85=True, is_use_camera=True): # 默认右臂
         # Parameters
         self.vel = 0.5
         self.acc = 0.5
@@ -273,28 +273,28 @@ class Ur5e_Robot:
 
     def plane_grasp(self, position, open_size=0.65, k_acc=0.5, k_vel=0.25, speed=125, force=125):
         """平面抓取"""
-        rpy = [-0.6250320266265061, -0.5814812750878331, -1.506216636430596] # 相对于base的rpy
-
-        # pre work
+        rpy = [3.109, -0.016, -1.561] # world
         self.go_home() #返回预设开始位置
 
-        # 给夹爪一定的开度
-        open_pos = int(-258*open_size +230)  # open size:0~0.85cm --> open pos:230~10
-        self.gripper.move_and_wait_for_pos(open_pos, speed, force)
-        print("gripper open size:")
-        self.log_gripper_info()
+        # # 给夹爪一定的开度 建议给大，随物体调整
+        # open_pos = int(-258*open_size +230)  # open size:0~0.85cm --> open pos:230~10
+        # self.gripper.move_and_wait_for_pos(open_pos, speed, force)
+        # print("gripper open size:")
+        # self.log_gripper_info()
 
-        # # 移动到预定位置
-        # # Firstly, achieve pre-grasp position
-        # pre_position = copy.deepcopy(position) # 深拷贝创建一个新的复合对象，并且递归地复制对象中所有子对象。原始对象和深拷贝对象之间拥有独立的内存空间，任何修改都不会相互影响。
-        # pre_position[2] = pre_position[2] + 0.2  # z axis
-        # self.rtde_c.moveL(pre_position + rpy, k_acc, k_vel) # 到达比预设位置高10cm处
+        # 移动到预定位置
+        # Firstly, achieve pre-grasp position
+        pre_position = copy.deepcopy(position) # 深拷贝创建一个新的复合对象，并且递归地复制对象中所有子对象。原始对象和深拷贝对象之间拥有独立的内存空间，任何修改都不会相互影响。
+        pre_position[2] = pre_position[2] + 0.2  # z axis
+        pre_base_position = self.get_TCP_pose_right(rpy[0], rpy[1], rpy[2], pre_position[0], pre_position[1], pre_position[2])
+        self.rtde_c.moveL(pre_base_position, k_acc, k_vel) # 到达比预设位置高10cm处
 
         # 抓取动作实现
         # Second，achieve grasp position
-        self.rtde_c.moveL(position+rpy, 0.6*k_acc, 0.6*k_vel)
+        base_position = self.get_TCP_pose_right(rpy[0], rpy[1], rpy[2], position[0], position[1], position[2])
+        self.rtde_c.moveL(base_position, 0.6*k_acc, 0.6*k_vel)
         self.close_gripper(speed, force)
-        # self.rtde_c.moveL(pre_position+rpy, 0.6*k_acc, 0.6*k_vel)
+        self.rtde_c.moveL(pre_base_position, 0.6*k_acc, 0.6*k_vel)
         if(self.check_grasp()): 
             print("Check grasp fail! ")
             self.go_home()
