@@ -21,7 +21,8 @@ class Camera(object):
         self.pipeline = rs.pipeline()
         config = rs.config()
         config.enable_stream(rs.stream.depth, self.im_width, self.im_height, rs.format.z16, self.fps)
-        config.enable_stream(rs.stream.color, self.im_width, self.im_height, rs.format.bgr8, self.fps)
+        # config.enable_stream(rs.stream.color, self.im_width, self.im_height, rs.format.bgr8, self.fps)
+        config.enable_stream(rs.stream.color, self.im_width, self.im_height, rs.format.rgb8, self.fps)
 
         # Start streaming
         cfg = self.pipeline.start(config)
@@ -33,6 +34,7 @@ class Camera(object):
         self.scale = cfg.get_device().first_depth_sensor().get_depth_scale()
         print("camera depth scale:",self.scale)
         print("D415 have connected ...")
+
     def get_data(self):
         # Wait for a coherent pair of frames: depth and color
         frames = self.pipeline.wait_for_frames()
@@ -49,7 +51,9 @@ class Camera(object):
         # Convert images to numpy arrays
         depth_image = np.asanyarray(aligned_depth_frame.get_data(),dtype=np.float32)
         # depth_image *= self.scale
-        depth_image = np.expand_dims(depth_image, axis=2)
+        #################################################################
+        # depth_image = np.expand_dims(depth_image, axis=2) # 标定时注释掉
+        #################################################################
         color_image = np.asanyarray(color_frame.get_data())
         return color_image, depth_image
 
@@ -78,13 +82,11 @@ class Camera(object):
         raw_intrinsics = rgb_profile.as_video_stream_profile().get_intrinsics()
         print("camera intrinsics:", raw_intrinsics)
         # camera intrinsics form is as follows.
-        #[[fx,0,ppx],
-        # [0,fy,ppy],
-        # [0,0,1]]
+        # [[fx,0,ppx], [0,fy,ppy], [0,0,1]]
         # intrinsics = np.array([615.284,0,309.623,0,614.557,247.967,0,0,1]).reshape(3,3) #640 480
         intrinsics = np.array([raw_intrinsics.fx, 0, raw_intrinsics.ppx, 0, raw_intrinsics.fy, raw_intrinsics.ppy, 0, 0, 1]).reshape(3, 3)
-
         return intrinsics
+    
 if __name__== '__main__':
     mycamera = Camera()
     # mycamera.get_data()

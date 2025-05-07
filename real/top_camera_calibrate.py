@@ -3,6 +3,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 import cv2
+import sys
+import os
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  
+sys.path.insert(0, project_root)
 from Ur5e_Robot import Ur5e_Robot
 from scipy import optimize  
 from mpl_toolkits.mplot3d import Axes3D  
@@ -16,17 +20,17 @@ from mpl_toolkits.mplot3d import Axes3D
 tcp_host_ip = '192.168.1.12'
 tcp_port = 50002
 
-workspace_limits = np.asarray([[0.2, 0.3], [-0.4, -0.2], [1.1, 1.3]])
-calib_grid_step = 0.05 
-checkerboard_offset_from_tool = [0,0.121,0] # 标定板到末端的距离 需要修改
-tool_orientation = [-np.pi/2,0,0] # 工具方向，需要让摄像头能看到 需要修改
+# workspace_limits = np.asarray([[0.17, 0.22], [-0.35, -0.15], [1.2, 1.4]]) # 50 没有设置安装Robotiq_85
+workspace_limits = np.asarray([[0.17, 0.22], [-0.3, -0.1], [1.2, 1.4]]) # 50 相对于world 设置安装Robotiq_85
+calib_grid_step = 0.05 # 生成标定点的间隔距离
+checkerboard_offset_from_tool = [0, 0, 0.155] # 标定板到末端的距离 (相对于tool)
+tool_orientation = [-1.305, 0.050, 0.022] # 工具方向，需要让摄像头能看到 (相对于base坐标系)
 #---------------------------------------------
 
 # Construct 3D calibration grid across workspace
-print(1 + (workspace_limits[0][1] - workspace_limits[0][0])/calib_grid_step)
-gridspace_x = np.linspace(workspace_limits[0][0], workspace_limits[0][1], int(1 + (workspace_limits[0][1] - workspace_limits[0][0])/calib_grid_step))
-gridspace_y = np.linspace(workspace_limits[1][0], workspace_limits[1][1], int(1 + (workspace_limits[1][1] - workspace_limits[1][0])/calib_grid_step))
-gridspace_z = np.linspace(workspace_limits[2][0], workspace_limits[2][1], int(1 + (workspace_limits[2][1] - workspace_limits[2][0])/calib_grid_step))
+gridspace_x = np.linspace(workspace_limits[0][0], workspace_limits[0][1], int(round(1 + (workspace_limits[0][1] - workspace_limits[0][0])/calib_grid_step)))
+gridspace_y = np.linspace(workspace_limits[1][0], workspace_limits[1][1], int(round(1 + (workspace_limits[1][1] - workspace_limits[1][0])/calib_grid_step)))
+gridspace_z = np.linspace(workspace_limits[2][0], workspace_limits[2][1], int(round(1 + (workspace_limits[2][1] - workspace_limits[2][0])/calib_grid_step)))
 calib_grid_x, calib_grid_y, calib_grid_z = np.meshgrid(gridspace_x, gridspace_y, gridspace_z)
 num_calib_grid_pts = calib_grid_x.shape[0]*calib_grid_x.shape[1]*calib_grid_x.shape[2]
 
@@ -49,10 +53,9 @@ for calib_pt_idx in range(num_calib_grid_pts):
     tool_position = calib_grid_pts[calib_pt_idx,:]
     tool_config = [tool_position[0],tool_position[1],tool_position[2],
            tool_orientation[0],tool_orientation[1],tool_orientation[2]]
-    tool_config1 = [tool_position[0], tool_position[1], tool_position[2],
-                   tool_orientation[0], tool_orientation[1], tool_orientation[2]]
-    print(f"tool position and orientation:{tool_config1}")
-    robot.rtde_c.moveL(tool_config)
+    print(f"tool position and orientation:{tool_config}")
+    base_config = robot.get_TCP_pose_right(tool_config[3], tool_config[4], tool_config[5], tool_config[0], tool_config[1], tool_config[2])
+    robot.rtde_c.moveL(base_config, 0.5, 0.25)
     time.sleep(2)  # k
     
     # Find checkerboard center
@@ -75,21 +78,23 @@ for calib_pt_idx in range(num_calib_grid_pts):
             continue
 
         # Save calibration point and observed checkerboard center
-        observed_pts.append([checkerboard_x,checkerboard_y,checkerboard_z])
-        # tool_position[2] += checkerboard_offset_from_tool
-        tool_position = tool_position + checkerboard_offset_from_tool
+        observed_pts.append([checkerboard_x, checkerboard_y, checkerboard_z])
+        # tool_position = [base_config[0], base_config[1], base_config[2]]
+        # tool_position = tool_position + checkerboard_offset_from_tool
+        tool_position = np.array([base_config[0], base_config[1], base_config[2]]) + np.array(checkerboard_offset_from_tool)
+        measured_pts.append(tool_position.tolist())
 
-        measured_pts.append(tool_position)
+
+        # measured_pts.append(tool_position) 
         observed_pix.append(checkerboard_pix)
 
         # Draw and display the corners
-        # vis = cv2.drawChessboardCorners(robot.camera.color_data, checkerboard_size, corners_refined, checkerboard_found)
         vis = cv2.drawChessboardCorners(bgr_color_data, (1,1), corners_refined[12,:,:], checkerboard_found)
         cv2.imwrite('%06d.png' % len(measured_pts), vis)
         cv2.imshow('Calibration',vis)
         cv2.waitKey(1000)
 
-easured_pts = np.asarray(measured_pts)
+measured_pts = np.asarray(measured_pts)
 observed_pts = np.asarray(observed_pts)
 observed_pix = np.asarray(observed_pix)
 world2camera = np.eye(4)
@@ -121,6 +126,8 @@ def get_rigid_transform_error(z_scale):
     new_observed_pts = np.concatenate((observed_x, observed_y, observed_z), axis=1)
 
     # Estimate rigid transform between measured points and new observed points
+    print("measured_pts shape:", np.asarray(measured_pts).shape)
+    print("new_observed_pts shape:", np.asarray(new_observed_pts).shape)
     R, t = get_rigid_transform(np.asarray(measured_pts), np.asarray(new_observed_pts))
     t.shape = (3,1)
     world2camera = np.concatenate((np.concatenate((R, t), axis=1),np.array([[0, 0, 0, 1]])), axis=0)
@@ -134,14 +141,14 @@ def get_rigid_transform_error(z_scale):
 
 # Optimize z scale w.r.t. rigid transform error
 print('Calibrating...')
-z_scale_init = 1
+z_scale_init = 1 
 optim_result = optimize.minimize(get_rigid_transform_error, np.asarray(z_scale_init), method='Nelder-Mead')
 camera_depth_offset = optim_result.x
 
 # Save camera optimized offset and camera pose
 print('Saving...')
-np.savetxt('camera_depth_scale.txt', camera_depth_offset, delimiter=' ')
+np.savetxt('camera_depth_scale1.txt', camera_depth_offset, delimiter=' ')
 get_rigid_transform_error(camera_depth_offset)
 camera_pose = np.linalg.inv(world2camera)
-np.savetxt('camera_pose.txt', camera_pose, delimiter=' ')
+np.savetxt('camera_pose1.txt', camera_pose, delimiter=' ')
 print('Done.')

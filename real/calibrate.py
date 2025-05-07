@@ -18,7 +18,7 @@ tcp_port = 50002
 # workspace_limits = np.asarray([[0.3, 0.75], [0.05, 0.4], [-0.2, -0.1]]) # Cols: min max, Rows: x y z (define workspace limits in robot coordinates)
 workspace_limits = np.asarray([[0.2, 0.4], [0.4, 0.6], [0.05, 0.1]])# change me!
 
-calib_grid_step = 0.05 #0.05
+calib_grid_step = 0.05 #0.05 生成标定点的间隔距离
 checkerboard_offset_from_tool = [0,0.121,0] # 棋盘中心相对于末端工具坐标系的3D偏移，单位米。change me!
 tool_orientation = [-np.pi/2,0,0] # 使棋盘面垂直于相机光轴。change me!
 #---------------------------------------------
