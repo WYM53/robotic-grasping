@@ -16,9 +16,9 @@ from utils.visualisation.plot import plot_grasp
 class GraspGenerator:
     def __init__(self, saved_model_path, cam_id, visualize=False):
         self.saved_model_path = saved_model_path
-        self.camera = RealSenseCamera(device_id=cam_id)
+        self.camera = RealSenseCamera(device_id=cam_id) #导入相机
 
-        self.saved_model_path = saved_model_path
+        self.saved_model_path = saved_model_path #导入模型
         self.model = None
         self.device = None
 
@@ -27,7 +27,7 @@ class GraspGenerator:
         # Connect to camera
         self.camera.connect()
 
-        # Load camera pose and depth scale (from running calibration)
+        # Load camera pose and depth scale (from running calibration) 加载手眼标定外参
         self.cam_pose = np.loadtxt('saved_data/camera_pose.txt', delimiter=' ')
         self.cam_depth_scale = np.loadtxt('saved_data/camera_depth_scale.txt', delimiter=' ')
 
@@ -52,17 +52,17 @@ class GraspGenerator:
         image_bundle = self.camera.get_image_bundle()
         rgb = image_bundle['rgb']
         depth = image_bundle['aligned_depth']
-        x, depth_img, rgb_img = self.cam_data.get_data(rgb=rgb, depth=depth)
+        x, depth_img, rgb_img = self.cam_data.get_data(rgb=rgb, depth=depth) # 对 rgb 和 深度 进行处理
 
         # Predict the grasp pose using the saved model
         with torch.no_grad():
             xc = x.to(self.device)
-            pred = self.model.predict(xc)
+            pred = self.model.predict(xc) # 获取模型预测结果
 
         q_img, ang_img, width_img = post_process_output(pred['pos'], pred['cos'], pred['sin'], pred['width'])
         grasps = detect_grasps(q_img, ang_img, width_img)
 
-        # Get grasp position from model output
+        # Get grasp position from model output 像素转相机xyz
         pos_z = depth[grasps[0].center[0] + self.cam_data.top_left[0], grasps[0].center[1] + self.cam_data.top_left[1]] * self.cam_depth_scale - 0.04
         pos_x = np.multiply(grasps[0].center[1] + self.cam_data.top_left[1] - self.camera.intrinsics.ppx,
                             pos_z / self.camera.intrinsics.fx)

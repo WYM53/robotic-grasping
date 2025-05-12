@@ -142,5 +142,7 @@ To run the grasp generator with a robot, please use our ROS implementation for B
 `./Ur5e_Robot.py`为使用的机械臂的相关控制类
 ## 1、相机外参标定时的文件：
 标定纸：`./calibrate_img/calib.io_checker_210x297_6x6_25.pdf`，打印时选择100%，不放缩。
-标定过程文件：`./real/top_camera_calibrate.py`，`./real/realsenseD415.py`中的`depth_image = np.expand_dims(depth_image, axis=2)`在标定时要注释调，否则报错。
+
+标定过程文件：`./real/top_camera_calibrate.py`，`./real/realsenseD415.py`中的`depth_image = np.expand_dims(depth_image, axis=2)`在标定时要注释掉，否则报错。
+
 标定后，通过`./real/top_camera_touch.py`测试标定效果。

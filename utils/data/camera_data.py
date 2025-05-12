@@ -47,10 +47,10 @@ class CameraData:
     def get_depth(self, img):
         depth_img = image.Image(img)
         if self.crop:
-            depth_img.crop(bottom_right=self.bottom_right, top_left=self.top_left)
+            depth_img.crop(bottom_right=self.bottom_right, top_left=self.top_left) # 裁减
         else:
-            depth_img.resize((self.output_size, self.output_size))
-        depth_img.normalise()
+            depth_img.resize((self.output_size, self.output_size)) # 放缩
+        depth_img.normalise() # 归一化
         depth_img.img = depth_img.img.transpose((2, 0, 1))
         return depth_img.img
 
@@ -70,7 +70,7 @@ class CameraData:
         rgb_img = None
         # Load the depth image
         if self.include_depth:
-            depth_img = self.get_depth(img=depth)
+            depth_img = self.get_depth(img=depth) # 对深度信息做处理
 
         # Load the RGB image
         if self.include_rgb:
@@ -82,7 +82,7 @@ class CameraData:
                         (np.expand_dims(depth_img, 0),
                          np.expand_dims(rgb_img, 0)),
                         1
-                    )
+                    ) # 拼接操作
                 )
         elif self.include_depth:
             x = self.numpy_to_torch(depth_img)

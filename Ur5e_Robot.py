@@ -232,7 +232,7 @@ class Ur5e_Robot:
 
 
     def go_home(self):
-        TCP_init_pose = self.get_TCP_pose_right(3.109, -0.016, -1.561, 0.257, -0.393, 1.2) #(rx, ry, rz, x, y, z)
+        TCP_init_pose = self.get_TCP_pose_right(3.141, -0.0, -1.571, 0.257, -0.393, 1.2) #(rx, ry, rz, x, y, z)
         # print(TCP_init_pose)
         self.rtde_c.moveL(TCP_init_pose, self.vel, self.acc)
       
@@ -273,7 +273,7 @@ class Ur5e_Robot:
 
     def plane_grasp(self, position, open_size=0.65, k_acc=0.5, k_vel=0.25, speed=125, force=125):
         """平面抓取"""
-        rpy = [3.109, -0.016, -1.561] # world
+        rpy = [3.141, -0.0, -1.571] # world
         self.go_home() #返回预设开始位置
 
         # # 给夹爪一定的开度 建议给大，随物体调整
@@ -302,7 +302,9 @@ class Ur5e_Robot:
         
         # 放置夹住的物体
         # Third,put the object into box
-        box_position = self.get_TCP_pose_right(3.109, -0.016, -1.561, 0.4, -0.3, 1.2)
+        pre_box_position = self.get_TCP_pose_right(3.141, -0.0, -1.571, 0.4, -0.3, 1.2)
+        self.rtde_c.moveL(pre_box_position, k_acc, k_vel)
+        box_position = self.get_TCP_pose_right(3.141, -0.0, -1.571, 0.4, -0.3, 0.9)
         self.rtde_c.moveL(box_position, k_acc, k_vel)
         self.open_gripper(speed,force)
 
@@ -310,6 +312,60 @@ class Ur5e_Robot:
         self.go_home()
         print("grasp success!")
         return True
+    
+    def plane_grasp_real(self, position, yaw=0, open_size=0.65, k_acc=0.25, k_vel=0.5, speed=255, force=125):
+        rpy = [3.141, -0.0, -1.571-yaw]
+        # rpy = [-np.pi, 0, 1.57 - yaw]
+
+        # # 判定抓取的位置是否处于工作空间
+        # for i in range(3):
+        #     position[i] = min(max(position[i],self.workspace_limits[i][0]),self.workspace_limits[i][1])
+
+        # 判定抓取的角度RPY是否在规定范围内 [-pi,pi]
+        for i in range(3):
+            if rpy[i] > np.pi:
+                rpy[i] -= 2*np.pi
+            elif rpy[i] < -np.pi:
+                rpy[i] += 2*np.pi
+        print('Executing: grasp at (%f, %f, %f) by the RPY angle (%f, %f, %f)' \
+              % (position[0], position[1], position[2],rpy[0],rpy[1],rpy[2]))
+
+        # pre work
+        grasp_home = [0.257, -0.393, 1.2, 3.141, -0.0, -1.571]
+        home_position = self.get_TCP_pose_right(grasp_home[3], grasp_home[4], grasp_home[5], grasp_home[0], grasp_home[1], grasp_home[2])
+        self.rtde_c.moveL(home_position, 0.6*k_acc, 0.6*k_vel)
+        open_pos = int(-258*open_size +230)  # open size:0~0.85cm --> open pos:230~10
+        self.gripper.move_and_wait_for_pos(open_pos, speed, force)
+        print("gripper open size:")
+        self.log_gripper_info()
+
+        # Firstly, achieve pre-grasp position
+        pre_position = copy.deepcopy(position)
+        pre_position[2] = pre_position[2] + 0.1  # z axis
+        pre_base_position = self.get_TCP_pose_right(rpy[0], rpy[1], rpy[2], pre_position[0], pre_position[1], pre_position[2])
+        self.rtde_c.moveL(pre_base_position, k_acc, k_vel) # 到达比预设位置高10cm处
+
+        # Second，achieve grasp position
+        base_position = self.get_TCP_pose_right(rpy[0], rpy[1], rpy[2], position[0], position[1], position[2])
+        self.rtde_c.moveL(base_position, 0.6*k_acc, 0.6*k_vel)
+        self.close_gripper(speed,force)
+        self.rtde_c.moveL(pre_base_position, k_acc, k_vel) 
+        if(self.check_grasp()):
+            print("Check grasp fail! ")
+            self.move_j_p(grasp_home)
+            return False
+        
+        # Third,put the object into box
+        box_position_top = self.get_TCP_pose_right(3.141, -0.0, -1.571, 0.4, -0.3, 0.9+0.15)
+        self.rtde_c.moveL(box_position_top, k_acc, k_vel)
+        box_position = self.get_TCP_pose_right(3.141, -0.0, -1.571, 0.4, -0.3, 0.9)
+        self.rtde_c.moveL(box_position, k_acc, k_vel)
+        self.open_gripper(speed,force)
+
+        self.rtde_c.moveL(home_position, 0.6*k_acc, 0.6*k_vel)
+        print("grasp success!")
+        return True
+    
 
 if __name__ =="__main__":
     ur_robot_right = Ur5e_Robot()
