@@ -19,6 +19,11 @@ import sys
 
 class Ur5e_Robot:
     def __init__(self, tcp_host_ip="192.168.1.12", tcp_port=50002, is_use_robotiq85=True, is_use_camera=True): # 默认右臂
+        self.right_arm_workspace_limits = [
+            [0.0, 0.5], # X轴范围
+            [-0.7, 0.3], # Y轴范围
+            [0.8, 1.5] # Z轴范围
+                        ]
         # Parameters
         self.vel = 0.5
         self.acc = 0.5
@@ -276,6 +281,12 @@ class Ur5e_Robot:
         rpy = [3.141, -0.0, -1.571] # world
         self.go_home() #返回预设开始位置
 
+        # 超出工作空间则退出
+        for i in range(3):
+            if not (self.right_arm_workspace_limits[i][0] <= position[i] <= self.right_arm_workspace_limits[i][1]):
+                print(f"位置超出工作空间限制: {['X', 'Y', 'Z'][i]}轴 = {position[i]}")
+                return  
+    
         # # 给夹爪一定的开度 建议给大，随物体调整
         # open_pos = int(-258*open_size +230)  # open size:0~0.85cm --> open pos:230~10
         # self.gripper.move_and_wait_for_pos(open_pos, speed, force)
@@ -298,6 +309,7 @@ class Ur5e_Robot:
         if(self.check_grasp()): 
             print("Check grasp fail! ")
             self.go_home()
+            self.open_gripper()
             return False
         
         # 放置夹住的物体
@@ -316,10 +328,15 @@ class Ur5e_Robot:
     def plane_grasp_real(self, position, yaw=0, open_size=0.65, k_acc=0.25, k_vel=0.5, speed=255, force=125):
         rpy = [3.141, -0.0, -1.571-yaw]
         # rpy = [-np.pi, 0, 1.57 - yaw]
-
+        
+        for i in range(3):
+            if not (self.right_arm_workspace_limits[i][0] <= position[i] <= self.right_arm_workspace_limits[i][1]):
+                print(f"位置超出工作空间限制: {['X', 'Y', 'Z'][i]}轴 = {position[i]}")
+                return  # 超出工作空间则退出
+        
         # # 判定抓取的位置是否处于工作空间
         # for i in range(3):
-        #     position[i] = min(max(position[i],self.workspace_limits[i][0]),self.workspace_limits[i][1])
+        #     position[i] = min(max(position[i], workspace_limits[i][0]), workspace_limits[i][1])
 
         # 判定抓取的角度RPY是否在规定范围内 [-pi,pi]
         for i in range(3):

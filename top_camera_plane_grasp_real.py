@@ -99,8 +99,12 @@ class PlaneGraspClass:
         if self.visualize:
             plot_grasp(fig=self.fig, rgb_img=self.cam_data.get_rgb(rgb, False), grasps=grasps, save=True)
         
+        print("Grasp_position = ",grasp_pose[0:3])
+        print("Grasp_angle = ",grasp_pose[3])
+        print("Grasp_width = ",width)
         success = self.ur_robot.plane_grasp_real([grasp_pose[0], grasp_pose[1], grasp_pose[2]-0.005], yaw=grasp_pose[3], open_size=width/100)
         return success
+
 
 
 if __name__ == '__main__':

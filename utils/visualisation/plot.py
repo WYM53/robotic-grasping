@@ -3,7 +3,7 @@ from datetime import datetime
 
 import matplotlib.pyplot as plt
 import numpy as np
-
+import cv2
 from utils.dataset_processing.grasp import detect_grasps
 
 warnings.filterwarnings("ignore")
@@ -102,6 +102,10 @@ def plot_grasp(
     plt.clf()
 
     ax = plt.subplot(111)
+
+    if rgb_img is not None and rgb_img.shape[2] == 3:
+        rgb_img = cv2.cvtColor(rgb_img, cv2.COLOR_BGR2RGB)
+    
     ax.imshow(rgb_img)
     for g in grasps:
         g.plot(ax)

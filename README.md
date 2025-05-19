@@ -1,4 +1,4 @@
-复现过程中还参考了:https://github.com/zhenjing/robotic-grasping
+
 # conda ENV
 ```bash
 conda create -n robot python=3.9 
@@ -137,12 +137,19 @@ To run the grasp generator with a robot, please use our ROS implementation for B
 
 
 
+复现过程中还参考了:https://github.com/zhenjing/robotic-grasping
 
 # 复现时的文件顺序
 `./Ur5e_Robot.py`为使用的机械臂的相关控制类
+
 ## 1、相机外参标定时的文件：
 标定纸：`./calibrate_img/calib.io_checker_210x297_6x6_25.pdf`，打印时选择100%，不放缩。
 
 标定过程文件：`./real/top_camera_calibrate.py`，`./real/realsenseD415.py`中的`depth_image = np.expand_dims(depth_image, axis=2)`在标定时要注释掉，否则报错。
 
 标定后，通过`./real/top_camera_touch.py`测试标定效果。
+
+## 2、模型部署文件：
+`top_camera_run_plane_grasp_real.py`为部署运行文件。
+
+最终效果：因为我的摄像头安装位置并不完全对着桌面，这导致生成的抓取框架基本没有对应任何一个抓取目标。
