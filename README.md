@@ -152,4 +152,4 @@ To run the grasp generator with a robot, please use our ROS implementation for B
 ## 2、模型部署文件：
 `top_camera_run_plane_grasp_real.py`为部署运行文件。
 
-最终效果：因为我的摄像头安装位置并不完全对着桌面，这导致生成的抓取框架基本没有对应任何一个抓取目标。
+最终效果：因为我的摄像头安装位置并不完全对着桌面，这导致生成的抓取框架基本没有对应任何一个抓取目标。(因计划变动原因，复现不做了)
